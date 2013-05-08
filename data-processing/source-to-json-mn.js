@@ -201,13 +201,23 @@ function processStats(row, drg, index) {
     8: 'totDischg',
     9: 'avgCovChg',
     10: 'avgTotPay',
-    11: 'diffChgPay'
+    11: 'diffChgPay',
+    12: 'perPay'
   };
   var state = row[5];
-  row[11] = parseFloat(row[10]) - parseFloat(row[9]);
+  var groups = [drg];
   
-  // Collect stats by DRG and state-DRG and US-DRG
-  _.each([drg, state + '-' + drg, 'US-' + drg], function(stat) {
+  // Get some extra values
+  row[11] = parseFloat(row[9]) - parseFloat(row[10]);
+  row[12] = (parseFloat(row[9]) - parseFloat(row[10])) / (parseFloat(row[9]));
+  
+  // Only handle filtered state to get DRG stats
+  if (state === stateFilter) {
+    groups = [drg, state + '-' + drg]
+  }
+  
+  // Collect stats by DRG and state-DRG and US-DRG groups
+  _.each(groups, function(stat) {
     _.each(col, function(field, colNum) {
       stats[stat] = stats[stat] || {};
       stats[stat][field] = stats[stat][field] || {};
