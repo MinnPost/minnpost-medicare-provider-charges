@@ -1,0 +1,11 @@
+{
+  "name": "minnpost-medicare-provider-charges",
+  "version": "0.0.1",
+  "main": "index.html",
+  "dependencies": {
+    "jquery": "~1.9.1",
+    "backbone": "~1.0.0",
+    "jquery-jsonp": "~2.4.0",
+    "underscore": "~1.4.4"
+  }
+}

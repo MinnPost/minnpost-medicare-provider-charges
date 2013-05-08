@@ -1,0 +1,38 @@
+{
+  "name": "minnpost-medicare-provider-charges",
+  "version": "0.0.1",
+  "author": "MinnPost <support@minnpost.com>",
+  "homepage": "https://github.com/MinnPost/minnpost-crime",
+  "description": "MN Medicare Provider Charges",
+  "contributors": [ 
+    {
+      "name": "Alan Palazzolo",
+      "email": "apalazzolo@minnpost.com"
+    } 
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MinnPost/minnpost-medicare-provider-charges.git"
+  },
+  "keywords": [
+    "minnpost"
+  ],
+  "dependencies": {
+  },
+  "devDependencies": {
+    "grunt": "0.4.x",
+    "grunt-contrib-concat": "*",
+    "grunt-contrib-jshint": "*",
+    "grunt-contrib-uglify": "*",
+    "grunt-contrib-copy": "*",
+    "grunt-contrib-jst": "*",
+    "grunt-contrib-clean": "*",
+    "grunt-s3": "*"
+  }, 
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/MinnPost/minnpost-medicare-provider-charges/blob/master/LICENSE.txt"
+    }
+  ]
+}
