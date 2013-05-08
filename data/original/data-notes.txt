@@ -1,0 +1,17 @@
+Inpatient Prospective Payment System (IPPS) Provider Level Charges and Medicare Payments for the Top 100 Diagnosis-Related Groups (DRG)  
+
+Methods
+
+Data Source: CMS Medicare Provider Analysis and Review (MEDPAR) inpatient data which contains discharge information for 100% of Medicare fee-for-service beneficiaries using hospital inpatient services. 
+ 
+Study Population: Medicare Inpatient Prospective Payment System (IPPS) providers within the 50 United States and District of Columbia with a known Hospital Referral Region (HRR) who are billing Medicare fee-for-service beneficiaries for the top 100 DRGs.  The top 100 DRGs are determined by the number of discharges. 
+
+Years: Fiscal Year 2011
+
+Geographic Variables: The provider's address including street, city, state abbreviation and zip code and the Hospital Referral Region (HRR) based on the providers zip code.  HRRs were developed by the Dartmouth Atlas of Health Care to delineate regional health care markets in the United States (http://www.dartmouthatlas.org/).
+
+Spending Measures: We present the provider's average total covered charges and average total payments within DRG.  Total payments consist of Medicare payments, beneficiary cost-share payments, and coordination of benefit payments.
+
+Utilization Measures: We present the total number of discharges billed by the provider within DRG.
+
+Limitations of Maryland Data: The state of Maryland has a unique waiver that exempts it from Medicare’s prospective payment systems for inpatient care.  Maryland instead uses an all-payer rate setting commission to determine its payment rates.  Medicare claims for hospitals in other states break out additional payments for indirect medical education (IME) costs and disproportionate share hospital (DSH) adjustments.  

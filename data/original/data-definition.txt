@@ -1,0 +1,17 @@
+Inpatient Prospective Payment System (IPPS) Provider Level Charges and Medicare Payments for the Top 100 Diagnosis-Related Groups (DRG) 
+ 	
+Documentation	
+
+Short Name	Description
+
+DRG 	Code and description identifying the DRG. DRGs are a classification system that groups similar clinical conditions (diagnoses) and the procedures furnished by the hospital during the stay.
+Provider Id	Provider Identifier billing for inpatient hospital services.
+Provider Name	Name of the provider.
+Provider Street Address	Street address in which the provider is physically located.
+Provider City	City in which the provider is physically located.
+Provider State	State in which the provider is physically located.
+Provider Zip Code	Zip code in which the provider is physically located.
+Provider HRR	HRR in which the provider is physically located.
+Total Discharges	The number of discharges billed by the provider for inpatient hospital services.
+Average Covered Charges	The provider's average charge for services covered by Medicare for all discharges in the DRG. These will vary from hospital to hospital because of differences in hospital charge structures.
+Average Total Payments	The average of Medicare payments to the provider for the DRG including the DRG amount, teaching,Ê disproportionate share, capital, and outlier payments for all cases.  Also included in Total  Payments are co-payment and deductible amounts that the patient is responsible for and payments by third parties for coordination of benefits.

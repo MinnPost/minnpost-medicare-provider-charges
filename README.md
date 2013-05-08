@@ -4,6 +4,11 @@ An interactive analysis of 2011 Medicare provider charges data released by the C
 
 ## Data
 
+Data provided by the Centers for Medicare and Medicaid Services (CMS).
+
+* [Link to page describing data](https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/index.html).
+* [Excel](https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/Downloads/IPPS_DRG_XLSX.zip) (data definition copied to text file)
+* [CSV](https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/Downloads/IPPS_DRG_CSV.zip) (provided in this repo)
 
 ## Data processing
 
