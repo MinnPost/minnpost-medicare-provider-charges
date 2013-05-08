@@ -2,6 +2,9 @@
  * This is a script to convert the original CSV data to JSON files
  * specific for our application
  *
+ * Use flag "--no-providers" to not update providers, which means, not
+ * running geocoding
+ *
  * Note that DC is considered a state in this data.
  *
  * For reference
@@ -19,6 +22,9 @@
  */
 var path = require('path');
 var fs = require('fs');
+var http = require('http');
+var url = require('url');
+var util = require('util');
 var office = require('csv');
 var _ = require('underscore');
 var ss = require('simple-statistics');
@@ -29,6 +35,8 @@ var input = 'data/original/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv'
 var inputFile = path.resolve(__dirname, '../' + input);
 var outputPath = path.resolve(__dirname, '../data/converted/');
 var stateFilter = 'MN';
+var noProvidersFlag = '--no-providers';
+var noProviders = (process.argv.indexOf(noProvidersFlag) > 0) ? true : false;
 
 // Data holders
 var headers;
@@ -66,15 +74,19 @@ function processCSV() {
         
         // Only get MN data
         if (row[5].toUpperCase() === stateFilter) {
-          providerCode = processProviders(row, index);
+          providerCode = (noProviders) ? row[1] : processProviders(row, index);
           processCharges(drgCode, providerCode, row, index);
         }
       }
     })
     .on('end', function(count) {
       saveNewFile('drgs.json', drgs);
-      saveNewFile('providers.json', providers);
       saveNewFile('charges.json', charges);
+      
+      if (!noProviders) {
+        geocodeProviders();
+        saveNewFile('providers.json', providers);
+      }
       
       makeStats();
       saveNewFile('stats.json', stats);
@@ -257,6 +269,35 @@ function makeStats() {
   });
 };
 
+// Geocode providers
+function geocodeProviders() {
+  var base = 'http://open.mapquestapi.com/geocoding/v1/batch?';
+  var query = [];
+
+  // Use the batch location ability with
+  // Mapquest
+  // See: http://open.mapquestapi.com/geocoding/#batch
+  _.each(providers, function(p) {
+    query.push('location=' + encodeURI(p.street + ', ' + p.city + ', ' + p.state + ', ' + p.zip));
+  });
+
+  console.log(base + query.join('&'));
+  http.get(base + query.join('&'), function(res) {
+    var data = ''
+
+    res.on('data', function(chunk) {
+      data += chunk;
+    });
+
+    res.on('end', function(err) {
+      console.log(util.inspect(data, false, null));
+    });
+
+    res.on('error', function(err) {
+      console.log(err);
+    });
+  })
+};
 
 // Launch
 processCSV();
