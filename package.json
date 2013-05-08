@@ -19,7 +19,8 @@
   ],
   "dependencies": {
     "csv": "0.3.x",
-    "underscore": "1.4.x"
+    "underscore": "1.4.x",
+    "simple-statistics": "~0.3.0"
   },
   "devDependencies": {
     "grunt": "0.4.x",

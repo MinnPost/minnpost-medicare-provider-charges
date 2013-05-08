@@ -12,6 +12,7 @@ Data provided by the Centers for Medicare and Medicaid Services (CMS).
 
 ## Data processing
 
+* In order to turn the data into manageable JSON files, run the following: `node data-processing/source-to-json-mn.js`
 
 ## Install
 

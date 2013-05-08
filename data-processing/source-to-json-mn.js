@@ -2,6 +2,8 @@
  * This is a script to convert the original CSV data to JSON files
  * specific for our application
  *
+ * Note that DC is considered a state in this data.
+ *
  * For reference
  * 0: 'DRG Definition',
  * 1: 'Provider Id',
@@ -19,6 +21,7 @@ var path = require('path');
 var fs = require('fs');
 var office = require('csv');
 var _ = require('underscore');
+var ss = require('simple-statistics');
 
 
 // Top level variables
@@ -32,6 +35,7 @@ var headers;
 var drgs = {};
 var providers = {};
 var charges = [];
+var stats = {};
 
 
 // Go through CSV
@@ -47,7 +51,7 @@ function processCSV() {
       return row;
     })
     .on('record', function(row, index) {
-      var drg;
+      var drgCode, providerCode;
     
       // If first row, get headers, else filter
       // by state
@@ -55,17 +59,25 @@ function processCSV() {
         headers = row;
       }
       else {
-        processDRG(row[0], index);
+        drgCode = processDRG(row[0], index);
+        
+        // Get state level stats
+        processStats(row, drgCode, index);
         
         // Only get MN data
         if (row[5].toUpperCase() === stateFilter) {
-        
+          providerCode = processProviders(row, index);
+          processCharges(drgCode, providerCode, row, index);
         }
       }
     })
     .on('end', function(count) {
       saveNewFile('drgs.json', drgs);
+      saveNewFile('providers.json', providers);
+      saveNewFile('charges.json', charges);
       
+      makeStats();
+      saveNewFile('stats.json', stats);
     })
     .on('error', function(error) {
       console.log('Error: ' + error.message);
@@ -81,7 +93,7 @@ function saveNewFile(file, data) {
       console.log('Error saving ' + file + ': ' + error);
     } 
     else {
-      console.log('JSON saved to ' + file + '.');
+      console.log('JSON saved to ' + file + ' with ' + _.size(data) + ' rows.');
     }
   }); 
 };
@@ -114,6 +126,125 @@ function processDRG(drg, index) {
         split[1] + ' | ' + drgs[split[1]] + ' | ' + split[3].trim());
     }
   }
+  
+  return split[1];
+};
+
+// Handle Providers (row[1] - row[7])
+function processProviders(row, index) {
+  var provider;
+
+  if (!row[1]) {
+    console.log('Provider ID value is not found on row: ' + index);
+  }
+  
+  provider = {
+    id: row[1],
+    name: row[2],
+    street: row[3],
+    city: row[4],
+    state: row[5],
+    zip: row[6],
+    hrr: row[7]
+  };
+  
+  // TODO: geocode address
+  // 
+  
+  // Add to Providers data
+  if (_.isUndefined(providers[row[1]])) {
+    providers[row[1]] = provider;
+  }
+  else {
+    // Check if street names are the same
+    if (providers[row[1]].street.toLowerCase() != provider.street.toLowerCase()) {
+      console.log('Provider street name mismatch on: ' + 
+        row[1] + ' | ' + providers[row[1]].street + ' | ' + provider.street);
+    }
+  }
+  
+  return row[1];
+};
+
+// Handle charges
+function processCharges(drgCode, providerCode, row, index) {
+  var charge, found;
+
+  if (!row[8]) {
+    console.log('Total Discharge value is not found on row: ' + index);
+  }
+  
+  charge = {
+    drg: drgCode,
+    provider: providerCode,
+    totDischg: parseFloat(row[8]),
+    avgCovChg: parseFloat(row[9]),
+    avgTotPay: parseFloat(row[10])
+  };
+  
+  // Double check that there are no duplicate value
+  found = _.find(charges, function(c) {
+    return _.isEqual(charge, c);
+  });
+  if (found) {
+    console.log('Found duplicate charge.');
+    console.log(found);
+    console.log(row);
+  }
+  
+  charges.push(charge);
+};
+
+// Process stats data to be used at the end
+function processStats(row, drg, index) {
+  var col = {
+    8: 'totDischg',
+    9: 'avgCovChg',
+    10: 'avgTotPay',
+    11: 'diffChgPay'
+  };
+  var state = row[5];
+  row[11] = parseFloat(row[10]) - parseFloat(row[9]);
+  
+  // Collect stats by DRG and state-DRG and US-DRG
+  _.each([drg, state + '-' + drg, 'US-' + drg], function(stat) {
+    _.each(col, function(field, colNum) {
+      stats[stat] = stats[stat] || {};
+      stats[stat][field] = stats[stat][field] || {};
+      stats[stat][field].values = stats[stat][field].values || [];
+      stats[stat][field].values.push(parseFloat(row[colNum]));
+    });
+  });
+};
+
+// Using the values we got from before make stats
+function makeStats() {
+  _.each(stats, function(stat, statGroup) {
+    _.each(stat, function(s, field) {
+      
+      if (!s.values) {
+        console.log('Issue with stat for group: ' + statGroup);
+      }
+      
+      stats[statGroup].count = s.values.length;
+      
+      //stats[statGroup][field].sum = ss.sum(s.values);
+      //stats[statGroup][field].min = ss.min(s.values);
+      //stats[statGroup][field].max = ss.max(s.values);
+      stats[statGroup][field].mean = ss.mean(s.values);
+      stats[statGroup][field].median = ss.median(s.values);
+      //stats[statGroup][field].mode = ss.mode(s.values);
+      //stats[statGroup][field].variance = ss.variance(s.values);
+      //stats[statGroup][field].standard_deviation = ss.standard_deviation(s.values);
+    });
+  });
+  
+  _.each(stats, function(stat, statGroup) {
+    _.each(stat, function(s, field) {
+      // Remove actual values
+      delete stats[statGroup][field].values;
+    });
+  });
 };
 
 
