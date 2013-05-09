@@ -41,7 +41,7 @@ module.exports = function(grunt) {
         separator: '\r\n\r\n'
       },
       dist: {
-        src: ['js/app.js'],
+        src: ['js/core.js', 'js/app.js'],
         dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
       },
       dist_latest: {
@@ -146,7 +146,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-contrib-jst');
   grunt.loadNpmTasks('grunt-contrib-clean');
-  grunt.loadNpmTasks('grunt-gss-pull');
   grunt.loadNpmTasks('grunt-s3');
   
 

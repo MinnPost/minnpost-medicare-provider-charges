@@ -44,7 +44,7 @@
         this.$el.html(this.templates.error({ error: e }));
       }, this);
       return this;
-    },
+    }
   });
   
   app.Application = Backbone.Router.extend({
