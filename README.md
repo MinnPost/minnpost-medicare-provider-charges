@@ -28,8 +28,17 @@ Packages:
 1. `bower install`
 1. `npm install`
 
-
 ## Build
 
+Prerequisites:
+
+1. Install node: `npm install -g grunt-cli`
+
+Build: 
+
+1. (optional) Update version in `package.json`
+1. Run `grunt`
 
 ## Deploy
+
+1. Run `grunt mp-deploy`
