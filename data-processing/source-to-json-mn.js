@@ -64,7 +64,7 @@ function processCSV() {
     
       // If first row, get headers, else filter
       // by state
-      if (index == 0) {
+      if (index === 0) {
         headers = row;
       }
       else {
@@ -96,7 +96,7 @@ function processCSV() {
     .on('error', function(error) {
       console.log('Error: ' + error.message);
     });
-};
+}
 
 // Save out data
 function saveNewFile(file, data) {
@@ -110,7 +110,7 @@ function saveNewFile(file, data) {
       console.log('JSON saved to ' + file + ' with ' + _.size(data) + ' rows.');
     }
   }); 
-};
+}
 
 // Handle DRG data
 function processDRG(drg, index) {
@@ -142,7 +142,7 @@ function processDRG(drg, index) {
   }
   
   return split[1];
-};
+}
 
 // Handle Providers (row[1] - row[7])
 function processProviders(row, index) {
@@ -178,7 +178,7 @@ function processProviders(row, index) {
   }
   
   return row[1];
-};
+}
 
 // Handle charges
 function processCharges(drgCode, providerCode, row, index) {
@@ -207,7 +207,7 @@ function processCharges(drgCode, providerCode, row, index) {
   }
   
   charges.push(charge);
-};
+}
 
 // Process stats data to be used at the end
 function processStats(row, drg, index) {
@@ -227,7 +227,7 @@ function processStats(row, drg, index) {
   
   // Only handle filtered state to get DRG stats
   if (state === stateFilter) {
-    groups = [drg, state + '-' + drg]
+    groups = [drg, state + '-' + drg];
   }
   
   // Collect stats by DRG and state-DRG and US-DRG groups
@@ -239,7 +239,7 @@ function processStats(row, drg, index) {
       stats[stat][field].values.push(parseFloat(row[colNum]));
     });
   });
-};
+}
 
 // Using the values we got from before make stats
 function makeStats() {
@@ -269,7 +269,7 @@ function makeStats() {
       delete stats[statGroup][field].values;
     });
   });
-};
+}
 
 // Geocode providers
 function geocodeProviders(callback) {
@@ -289,7 +289,7 @@ function geocodeProviders(callback) {
 
   console.log('Goecoding providers...');
   http.get(base + query.join('&'), function(res) {
-    var data = ''
+    var data = '';
 
     res.on('data', function(chunk) {
       data += chunk;
@@ -339,8 +339,8 @@ function geocodeProviders(callback) {
     res.on('error', function(err) {
       console.log(err);
     });
-  })
-};
+  });
+}
 
 // Street translations
 function translateStreet(street) {
@@ -371,7 +371,7 @@ function translateStreet(street) {
   
   return (!_.isUndefined(translations[street])) ? 
     translations[street] : street;
-};
+}
 
 // City translations
 function translateCity(city) {
@@ -384,7 +384,7 @@ function translateCity(city) {
   
   return (!_.isUndefined(translations[city])) ? 
     translations[city] : city;
-};
+}
 
 
 // Launch

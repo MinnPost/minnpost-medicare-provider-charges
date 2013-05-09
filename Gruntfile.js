@@ -163,9 +163,6 @@ module.exports = function(grunt) {
       grunt.log.write('Wrote ' + tasks[t][0] + ' to ' + t + '...').ok();
     }
   });
-  
-  // Data tasks
-  grunt.registerTask('data', ['gss_pull', 'data_embed']);
 
   // Default task.
   grunt.registerTask('default', ['jshint', 'clean', 'jst', 'concat', 'uglify', 'copy']);
