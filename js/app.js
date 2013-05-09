@@ -7,9 +7,45 @@
  */
 (function(app, $, undefined) {
   app.ProviderModel = Backbone.Model.extend({
+    mapMarkerStyle: {
+      stroke: false,
+      fillOpacity: 0.75,
+      fillColor: '#222222',
+      radius: 4
+    },
+    
+    mapMarkerHighlight: {
+      stroke: true,
+      color: '#BCBCBC',
+      fillOpacity: 0.95,
+      fillColor: '#787878',
+      radius: 7
+    },
+    
     initialize: function() {
       // Get charges
       this.set('charges', _.where(app.data.charges, { provider: this.id }));
+    },
+    
+    addMarker: function(map, markerOutput) {
+      var thisModel = this;
+      
+      var circle = new L.CircleMarker([this.get('lat'), this.get('lng')], this.mapMarkerStyle);
+      circle.addTo(map)
+        .bindPopup(markerOutput)
+        .on('click', function() {
+          circle.setStyle(thisModel.mapMarkerHighlight);
+          app.router.showProvider(thisModel.id);
+        })
+        .on('mouseover', function() {
+          circle.setStyle(thisModel.mapMarkerHighlight);
+        })
+        .on('mouseout', function() {
+          circle.setStyle(thisModel.mapMarkerStyle);
+        });
+      
+      this.set('marker', circle);
+      return this;
     }
   });
   
@@ -21,6 +57,7 @@
   
   app.AppView = Backbone.View.extend({
     el: '#minnpost-medicare-provider-charges',
+    providerEl: '.results-container',
     
     mapLayers: {
       'Streets': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png'),
@@ -48,10 +85,18 @@
       
       providers.each(function(p) {
         app.getTemplate('template-map-popup', function(template) {
-          L.marker([p.get('lat'), p.get('lng')]).addTo(thisView.map)
-            .bindPopup(template({ p: p.toJSON() }));
-          
+          p.addMarker(thisView.map, template({ p: p.toJSON() }));
         }, this);
+      });
+      
+      return this;
+    },
+    
+    renderProvider: function(provider) {
+      var thisView = this;
+      
+      app.getTemplate('template-provider', function(template) {
+        thisView.$el.find(thisView.providerEl).append(template({ p: provider.toJSON() }));
       });
       
       return this;
@@ -77,6 +122,7 @@
   app.Application = Backbone.Router.extend({
     routes: {
       'map': 'routeMap',
+      'providers/*providers': 'routeProviders',
       '*defaultR': 'routeDefault'
     },
     
@@ -86,9 +132,12 @@
     },
     
     dataSets: ['charges', 'drgs', 'providers', 'stats'],
+    
+    displayProviders: [],
   
     initialize: function(options) {
       var thisApp = this;
+      app.router = this;
     
       // Store intial options for globa use
       app.options = _.extend(this.defaultOptions, options);
@@ -130,6 +179,7 @@
       
       // Render main container
       this.mainView.render();
+      this.mainView.renderMap(this.providers);
       this.start();
     },
     
@@ -141,11 +191,33 @@
   
     // Default route
     routeDefault: function() {
-      this.navigate('/map', { trigger: true, replace: true });
+      //this.navigate('/map', { trigger: true, replace: true });
     },
     
-    routeMap: function() {
-      this.mainView.renderMap(this.providers);
+    routeProviders: function(providers) {
+      var thisApp = this;
+      
+      this.displayProviders = providers.split('/');
+      if (this.displayProviders.length > 2) {
+        this.displayProviders.splice(0, 1);
+      }
+      
+      _.each(this.displayProviders, function(p) {
+        thisApp.mainView.renderProvider(thisApp.providers.get(p));
+      });
+    },
+    
+    showProvider: function(p) {
+      if (this.displayProviders.length >= 2) {
+        this.displayProviders.shift();
+        this.displayProviders.push(p)
+      }
+      else {
+        this.displayProviders.push(p);
+      }
+      
+      console.log(this.displayProviders);
+      this.navigate('/providers/' + this.displayProviders.join('/'), { trigger: true, replace: true });
     }
   });
   
