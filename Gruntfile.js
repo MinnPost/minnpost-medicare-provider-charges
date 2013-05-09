@@ -27,13 +27,12 @@ module.exports = function(grunt) {
       folder: 'dist/'
     },
     jst: {
-      compile: {
-        options: {
-          namespace: 'mpApp.<%= pkg.name %>.templates'
-        },
-        files: {
-          'dist/templates.js': ['js/templates/*.html']
-        }
+      options: {
+        namespace: 'mpApp.<%= pkg.name %>.templates'
+      },
+      templates: {
+        src: ['js/templates/*.html'],
+        dest: 'dist/templates.js'
       }
     },
     concat: {
@@ -41,7 +40,7 @@ module.exports = function(grunt) {
         separator: '\r\n\r\n'
       },
       dist: {
-        src: ['js/core.js', 'js/app.js'], dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
+        src: ['js/core.js', 'dist/templates.js', 'js/app.js'], dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
       },
       dist_latest: {
         src: ['<%= concat.dist.src %>'], dest: 'dist/<%= pkg.name %>.latest.js'

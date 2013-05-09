@@ -88,6 +88,62 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
   };
 })(mpApp['minnpost-medicare-provider-charges'], jQuery);
 
+this["mpApp"] = this["mpApp"] || {};
+this["mpApp"]["minnpost-medicare-provider-charges"] = this["mpApp"]["minnpost-medicare-provider-charges"] || {};
+this["mpApp"]["minnpost-medicare-provider-charges"]["templates"] = this["mpApp"]["minnpost-medicare-provider-charges"]["templates"] || {};
+
+this["mpApp"]["minnpost-medicare-provider-charges"]["templates"]["js/templates/template-container.html"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape;
+with (obj) {
+__p += '<div class="main-container">\n\n  <div class="map-container">\n    <div id="provider-map"></div>\n  </div>\n  \n  <div class="search-container">\n  \n  </div>\n  \n  <div class="results-container">\n  \n  </div>\n\n</div>';
+
+}
+return __p
+};
+
+this["mpApp"]["minnpost-medicare-provider-charges"]["templates"]["js/templates/template-error.html"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape;
+with (obj) {
+__p += '<div class="error-container">\n  <div class="error"><span>There was an error.  ' +
+((__t = ( (error) ? error : '' )) == null ? '' : __t) +
+'</span></div>\n</div>';
+
+}
+return __p
+};
+
+this["mpApp"]["minnpost-medicare-provider-charges"]["templates"]["js/templates/template-loading.html"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape;
+with (obj) {
+__p += '<div class="loading-general-container">\n  <div class="loading-general"><span>Loading...</span></div>\n</div>';
+
+}
+return __p
+};
+
+this["mpApp"]["minnpost-medicare-provider-charges"]["templates"]["js/templates/template-map-popup.html"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape;
+with (obj) {
+__p += '<div class="map-popup">\n  <h3>' +
+((__t = ( p.name )) == null ? '' : __t) +
+'</h3>\n  \n  ' +
+((__t = ( p.street )) == null ? '' : __t) +
+'<br />\n  ' +
+((__t = ( p.city )) == null ? '' : __t) +
+', ' +
+((__t = ( p.state )) == null ? '' : __t) +
+' ' +
+((__t = ( p.zip )) == null ? '' : __t) +
+'\n</div>';
+
+}
+return __p
+};
+
 /**
  * Main application for minnpost-medicare-provider-charges.
  */
