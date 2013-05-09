@@ -47,8 +47,7 @@
       providers.each(function(p) {
         app.getTemplate('template-map-popup', function(template) {
           L.marker([p.get('lat'), p.get('lng')]).addTo(thisView.map)
-            .bindPopup(template({ p: p.toJSON() }))
-            .openPopup();
+            .bindPopup(template({ p: p.toJSON() }));
           
         }, this);
       });
@@ -81,17 +80,21 @@
     
     defaultOptions: {
       imagePath: './css/images/',
-      dataPath: './data/'
+      dataPath: './data/converted/'
     },
     
-    dataSet: ['converted/charges', 'converted/drgs', 
-      'converted/providers', 'converted/stats'],
+    dataSets: ['charges', 'drgs', 'providers', 'stats'],
   
     initialize: function(options) {
       var thisApp = this;
     
       // Store intial options for globa use
       app.options = _.extend(this.defaultOptions, options);
+      
+      // Leaflet needs to know where images are (hackish)
+      if (app.options.imagePath.indexOf('http') === 0) {
+        L.Icon.Default.imagePath = app.options.imagePath.slice(0, -1);
+      }
       
       // Create objects that are needed app wide
       this.mainView = new app.AppView({
@@ -100,7 +103,7 @@
       this.mainView.renderLoading();
     
       // Get raw data
-      app.getData(this.dataSet)
+      app.getData(this.dataSets)
         .done(function() {
           app.data.charges = arguments[0][0];
           app.data.drgs = arguments[1][0];
