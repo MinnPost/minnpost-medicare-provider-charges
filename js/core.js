@@ -49,22 +49,41 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
   /**
    * Data source handling.  For development, we can call
    * the data directly from the JSON file, but for production
-   * we include it in our global object.
+   * we want to proxy for JSONP.
    *
-   * Expects callback like: function(data) {  }
+   * `name` should be relative path to dataset minus the .json
+   *
+   * Returns jQuery's defferred object.
    */
   app.data = app.data || {};
-  app.getData = function(name, callback, context) {
-    context = context || app;
+  app.getData = function(name) {
+    var proxyPrefix = 'http://mp-jsonproxy.herokuapp.com/proxy?callback=?&url=';
+    var useJSONP = false;
+    var defers = [];
     
-    if (!_.isUndefined(app.data[name])) {
-      callback.apply(context, [ app.data[name] ]);
+    name = (_.isArray(name)) ? name : [ name ];
+    
+    // If the data path is not relative, then use JSONP
+    if (app.options.dataPath.indexOf('http') === 0) {
+      useJSONP = true;
     }
-    else {
-      $.getJSON('./data/' + name + '.json', function(data) {
-        app.data[name] = data;
-        callback.apply(context, [ data ]);
-      });
-    }
+    
+    // Go through each file and add to defers
+    _.each(name, function(d) {
+      var defer;
+      
+      if (useJSONP) {
+        defer = $.jsonp({
+          url: proxyPrefix + encodeURI(app.options.dataPath + d + '.json')
+        });
+      }
+      else {
+        defer = $.getJSON(app.options.dataPath + d + '.json');
+      }
+      
+      defers.push(defer);
+    });
+    
+    return $.when.apply($, defers);
   };
 })(mpApp['minnpost-medicare-provider-charges'], jQuery);

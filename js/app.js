@@ -7,7 +7,10 @@
  */
 (function(app, $, undefined) {
   app.ProviderModel = Backbone.Model.extend({
-  
+    initialize: function() {
+      // Get charges
+      this.set('charges', _.where(app.data.charges, { provider: this.id }));
+    }
   });
   
   app.ProvidersCollection = Backbone.Collection.extend({
@@ -25,7 +28,7 @@
     
     render: function() {
       app.getTemplate('template-container', function(template) {
-        this.$el.html();
+        this.$el.html(template({ }));
       }, this);
       return this;
     },
@@ -54,10 +57,16 @@
     },
     
     defaultOptions: {
-      imagePath: './css/images/'
+      imagePath: './css/images/',
+      dataPath: './data/'
     },
+    
+    dataSet: ['converted/charges', 'converted/drgs', 
+      'converted/providers', 'converted/stats'],
   
     initialize: function(options) {
+      var thisApp = this;
+    
       // Store intial options for globa use
       app.options = _.extend(this.defaultOptions, options);
       
@@ -68,11 +77,31 @@
       this.mainView.renderLoading();
     
       // Get raw data
-      //app.getData('mayoral_candidates', this.processData, this);
+      app.getData(this.dataSet)
+        .done(function() {
+          app.data.charges = arguments[0][0];
+          app.data.drgs = arguments[1][0];
+          app.data.providers = arguments[2][0];
+          app.data.stats = arguments[3][0];
+          thisApp.processData();
+        })
+        .fail(function() {
+          thisApp.mainView.renderError();
+        });
     },
     
+    // Process data and make objects
     processData: function(data) {
+      var thisApp = this;
+    
+      // Create providers collections
+      this.providers = new app.ProvidersCollection();
+      _.each(app.data.providers, function(p, i) {
+        thisApp.providers.add(new app.ProviderModel(p));
+      });
       
+      // Render main container
+      this.mainView.render();
       this.start();
     },
     
