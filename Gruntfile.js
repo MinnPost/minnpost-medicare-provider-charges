@@ -41,19 +41,35 @@ module.exports = function(grunt) {
         separator: '\r\n\r\n'
       },
       dist: {
-        src: ['js/core.js', 'js/app.js'],
-        dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
+        src: ['js/core.js', 'js/app.js'], dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.js'
       },
       dist_latest: {
-        src: ['<%= concat.dist.src %>'],
-        dest: 'dist/<%= pkg.name %>.latest.js'
+        src: ['<%= concat.dist.src %>'], dest: 'dist/<%= pkg.name %>.latest.js'
+      },
+      dist_css: {
+        src: ['css/style.css'], dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.css'
+      },
+      dist_css_latest: {
+        src: ['css/style.css'], dest: 'dist/<%= pkg.name %>.latest.css'
+      },
+      dist_css_ie: {
+        src: ['css/style.ie.css'], dest: 'dist/<%= pkg.name %>.<%= pkg.version %>.ie.css'
+      },
+      dist_css_latest_ie: {
+        src: ['css/style.ie.css'], dest: 'dist/<%= pkg.name %>.latest.ie.css'
       },
       libs: {
-        src: ['components/jquery/jquery.min.js', 'components/jquery-jsonp/src/jquery.jsonp.js', 'components/underscore/underscore-min.js', 'components/backbone/backbone-min.js'],
+        src: ['components/jquery/jquery.min.js', 'components/jquery-jsonp/src/jquery.jsonp.js', 'components/underscore/underscore-min.js', 'components/backbone/backbone-min.js', 'components/leaflet/dist/leaflet.js'],
         dest: 'dist/<%= pkg.name %>.libs.js',
         options: {
           separator: ';\r\n\r\n'
         }
+      },
+      libs_css: {
+        src: ['components/leaflet/dist/leaflet.css'], dest: 'dist/<%= pkg.name %>.libs.css'
+      },
+      libs_css_ie: {
+        src: ['components/leaflet/dist/leaflet.ie.css'], dest: 'dist/<%= pkg.name %>.libs.ie.css'
       }
     },
     uglify: {
@@ -70,22 +86,21 @@ module.exports = function(grunt) {
       }
     },
     copy: {
-      dist: {
-        files: {
-          'dist/<%= pkg.name %>.<%= pkg.version %>.css': 'css/style.css',
-          'dist/<%= pkg.name %>.<%= pkg.version %>.ie.css': 'css/style.ie.css'
-        }
-      },
-      dist_latest: {
-        files: {
-          'dist/<%= pkg.name %>.latest.css': 'css/style.css',
-          'dist/<%= pkg.name %>.latest.ie.css': 'css/style.ie.css'
-        }
-      },
       images: {
         files: [
           {
             cwd: './css/images/',
+            expand: true,
+            filter: 'isFile',
+            src: ['*'],
+            dest: 'dist/images/'
+          }
+        ]
+      },
+      leaflet_images: {
+        files: [
+          {
+            cwd: './components/leaflet/dist/images/',
             expand: true,
             filter: 'isFile',
             src: ['*'],

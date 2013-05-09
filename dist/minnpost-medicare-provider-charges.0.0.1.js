@@ -49,23 +49,42 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
   /**
    * Data source handling.  For development, we can call
    * the data directly from the JSON file, but for production
-   * we include it in our global object.
+   * we want to proxy for JSONP.
    *
-   * Expects callback like: function(data) {  }
+   * `name` should be relative path to dataset minus the .json
+   *
+   * Returns jQuery's defferred object.
    */
   app.data = app.data || {};
-  app.getData = function(name, callback, context) {
-    context = context || app;
+  app.getData = function(name) {
+    var proxyPrefix = 'http://mp-jsonproxy.herokuapp.com/proxy?callback=?&url=';
+    var useJSONP = false;
+    var defers = [];
     
-    if (!_.isUndefined(app.data[name])) {
-      callback.apply(context, [ app.data[name] ]);
+    name = (_.isArray(name)) ? name : [ name ];
+    
+    // If the data path is not relative, then use JSONP
+    if (app.options.dataPath.indexOf('http') === 0) {
+      useJSONP = true;
     }
-    else {
-      $.getJSON('./data/' + name + '.json', function(data) {
-        app.data[name] = data;
-        callback.apply(context, [ data ]);
-      });
-    }
+    
+    // Go through each file and add to defers
+    _.each(name, function(d) {
+      var defer;
+      
+      if (useJSONP) {
+        defer = $.jsonp({
+          url: proxyPrefix + encodeURI(app.options.dataPath + d + '.json')
+        });
+      }
+      else {
+        defer = $.getJSON(app.options.dataPath + d + '.json');
+      }
+      
+      defers.push(defer);
+    });
+    
+    return $.when.apply($, defers);
   };
 })(mpApp['minnpost-medicare-provider-charges'], jQuery);
 
@@ -78,7 +97,10 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
  */
 (function(app, $, undefined) {
   app.ProviderModel = Backbone.Model.extend({
-  
+    initialize: function() {
+      // Get charges
+      this.set('charges', _.where(app.data.charges, { provider: this.id }));
+    }
   });
   
   app.ProvidersCollection = Backbone.Collection.extend({
@@ -90,14 +112,37 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
   app.AppView = Backbone.View.extend({
     el: '#minnpost-medicare-provider-charges',
     
+    mapBaseLayer: new L.TileLayer(
+      'http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png', 
+      { attribution: 'Map tiles &copy; <a href="http://mapbox.com">MapBox</a>', maxZoom: 17 }
+    ),
+    
     initialize: function() {
       this.templates = this.templates || {};
     },
     
     render: function() {
       app.getTemplate('template-container', function(template) {
-        this.$el.html();
+        this.$el.html(template({ }));
       }, this);
+      return this;
+    },
+    
+    renderMap: function(providers) {
+      var thisView = this;
+      
+      this.map = new L.Map('provider-map').setView([46.708, -93.056], 6);
+      this.mapBaseLayer.addTo(this.map);
+      
+      providers.each(function(p) {
+        app.getTemplate('template-map-popup', function(template) {
+          L.marker([p.get('lat'), p.get('lng')]).addTo(thisView.map)
+            .bindPopup(template({ p: p.toJSON() }))
+            .openPopup();
+          
+        }, this);
+      });
+      
       return this;
     },
     
@@ -125,10 +170,16 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
     },
     
     defaultOptions: {
-      imagePath: './css/images/'
+      imagePath: './css/images/',
+      dataPath: './data/'
     },
+    
+    dataSet: ['converted/charges', 'converted/drgs', 
+      'converted/providers', 'converted/stats'],
   
     initialize: function(options) {
+      var thisApp = this;
+    
       // Store intial options for globa use
       app.options = _.extend(this.defaultOptions, options);
       
@@ -139,11 +190,31 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
       this.mainView.renderLoading();
     
       // Get raw data
-      //app.getData('mayoral_candidates', this.processData, this);
+      app.getData(this.dataSet)
+        .done(function() {
+          app.data.charges = arguments[0][0];
+          app.data.drgs = arguments[1][0];
+          app.data.providers = arguments[2][0];
+          app.data.stats = arguments[3][0];
+          thisApp.processData();
+        })
+        .fail(function() {
+          thisApp.mainView.renderError();
+        });
     },
     
+    // Process data and make objects
     processData: function(data) {
+      var thisApp = this;
+    
+      // Create providers collections
+      this.providers = new app.ProvidersCollection();
+      _.each(app.data.providers, function(p, i) {
+        thisApp.providers.add(new app.ProviderModel(p));
+      });
       
+      // Render main container
+      this.mainView.render();
       this.start();
     },
     
@@ -159,6 +230,7 @@ mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-
     },
     
     routeMap: function() {
+      this.mainView.renderMap(this.providers);
     }
   });
   

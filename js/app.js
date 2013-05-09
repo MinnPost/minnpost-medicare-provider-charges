@@ -22,6 +22,11 @@
   app.AppView = Backbone.View.extend({
     el: '#minnpost-medicare-provider-charges',
     
+    mapBaseLayer: new L.TileLayer(
+      'http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png', 
+      { attribution: 'Map tiles &copy; <a href="http://mapbox.com">MapBox</a>', maxZoom: 17 }
+    ),
+    
     initialize: function() {
       this.templates = this.templates || {};
     },
@@ -30,6 +35,24 @@
       app.getTemplate('template-container', function(template) {
         this.$el.html(template({ }));
       }, this);
+      return this;
+    },
+    
+    renderMap: function(providers) {
+      var thisView = this;
+      
+      this.map = new L.Map('provider-map').setView([46.708, -93.056], 6);
+      this.mapBaseLayer.addTo(this.map);
+      
+      providers.each(function(p) {
+        app.getTemplate('template-map-popup', function(template) {
+          L.marker([p.get('lat'), p.get('lng')]).addTo(thisView.map)
+            .bindPopup(template({ p: p.toJSON() }))
+            .openPopup();
+          
+        }, this);
+      });
+      
       return this;
     },
     
@@ -117,6 +140,7 @@
     },
     
     routeMap: function() {
+      this.mainView.renderMap(this.providers);
     }
   });
   

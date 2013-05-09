@@ -319,7 +319,7 @@ function geocodeProviders(callback) {
           // There is one address that is off a bit
           else if (r.providedLocation.location.toLowerCase() == '855 Mankato Ave, WINONA, MN, 55987'.toLowerCase()) {
             providers['240044'].lat = 44.033478;
-            providers['240044'].lat = -91.623724;
+            providers['240044'].lng = -91.623724;
           }
           else {
             console.log('Location not ADDRESS/POINT quality: ' + r.providedLocation.location);
