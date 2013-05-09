@@ -14,6 +14,7 @@ Data provided by the Centers for Medicare and Medicaid Services (CMS).
 
 * In order to turn the data into manageable JSON files, run the following: `node data-processing/source-to-json-mn.js`
     * Use the `--no-providers` flag to not process providers and therefore nor run the geocoding.
+    * Geocoding provided by [MapQuest](http://www.mapquestapi.com/geocoding/).
 
 ## Install
 

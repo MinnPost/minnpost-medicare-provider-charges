@@ -24,8 +24,7 @@ var path = require('path');
 var fs = require('fs');
 var http = require('http');
 var url = require('url');
-var util = require('util');
-var office = require('csv');
+var csv = require('csv');
 var _ = require('underscore');
 var ss = require('simple-statistics');
 
@@ -37,6 +36,8 @@ var outputPath = path.resolve(__dirname, '../data/converted/');
 var stateFilter = 'MN';
 var noProvidersFlag = '--no-providers';
 var noProviders = (process.argv.indexOf(noProvidersFlag) > 0) ? true : false;
+// Please don't steal
+var mapQuestAppKey = 'Fmjtd%7Cluub2d61n9%2C7a%3Do5-9u2nlw';
 
 // Data holders
 var headers;
@@ -84,8 +85,9 @@ function processCSV() {
       saveNewFile('charges.json', charges);
       
       if (!noProviders) {
-        geocodeProviders();
-        saveNewFile('providers.json', providers);
+        geocodeProviders(function() {
+          saveNewFile('providers.json', providers);
+        });
       }
       
       makeStats();
@@ -270,18 +272,22 @@ function makeStats() {
 };
 
 // Geocode providers
-function geocodeProviders() {
-  var base = 'http://open.mapquestapi.com/geocoding/v1/batch?';
+function geocodeProviders(callback) {
+  // The MapQuest open geocoding is just not that good, even after
+  // standardizing addresses, so we are using the non-open one
+  //var base = 'http://open.mapquestapi.com/geocoding/v1/batch?';
+  var base = 'http://www.mapquestapi.com/geocoding/v1/batch?key=' + mapQuestAppKey + '&';
   var query = [];
 
   // Use the batch location ability with
   // Mapquest
   // See: http://open.mapquestapi.com/geocoding/#batch
   _.each(providers, function(p) {
-    query.push('location=' + encodeURI(p.street + ', ' + p.city + ', ' + p.state + ', ' + p.zip));
+    query.push('location=' + encodeURI(translateStreet(p.street) + 
+      ', ' + translateCity(p.city) + ', ' + p.state + ', ' + p.zip));
   });
 
-  console.log(base + query.join('&'));
+  console.log('Goecoding providers...');
   http.get(base + query.join('&'), function(res) {
     var data = ''
 
@@ -290,7 +296,44 @@ function geocodeProviders() {
     });
 
     res.on('end', function(err) {
-      console.log(util.inspect(data, false, null));
+      data = JSON.parse(data);
+      console.log('Returning results: ' + _.size(data.results));
+    
+      _.each(data.results, function(r) {
+        if (_.isArray(r.locations) && r.locations.length > 0) {
+          // Assume first one is the one we want and that it
+          // is accurate
+          // See http://www.mapquestapi.com/geocoding/geocodequality.html
+          if (r.locations[0].geocodeQuality === 'ADDRESS' || r.locations[0].geocodeQuality === 'POINT') {
+            // This could probably be more efficient
+            _.each(providers, function(p, i) {
+              var queryAddress = translateStreet(p.street) + ', ' + translateCity(p.city) + 
+                ', ' + p.state + ', ' + p.zip;
+              
+              if (r.providedLocation.location.toLowerCase() == queryAddress.toLowerCase()) {
+                providers[i].lng = r.locations[0].latLng.lng;
+                providers[i].lat = r.locations[0].latLng.lat;
+              }
+            });
+          }
+          // There is one address that is off a bit
+          else if (r.providedLocation.location.toLowerCase() == '855 Mankato Ave, WINONA, MN, 55987'.toLowerCase()) {
+            providers['240044'].lat = 44.033478;
+            providers['240044'].lat = -91.623724;
+          }
+          else {
+            console.log('Location not ADDRESS/POINT quality: ' + r.providedLocation.location);
+            console.log(r.locations[0]);
+          }
+        }
+        else {
+          console.log('Did not find a location for: ' + r.providedLocation.location);
+        }
+      });
+      
+      if (_.isFunction(callback)) {
+        callback();
+      }
     });
 
     res.on('error', function(err) {
@@ -298,6 +341,51 @@ function geocodeProviders() {
     });
   })
 };
+
+// Street translations
+function translateStreet(street) {
+  var translations = {
+    '3300 OAKDALE NORTH': '3300 Oakdale Ave N',
+    '701 PARK AVENUE': '701 Park Ave S',
+    '1650 FOURTH STREET SOUTHEAST': '1650 4th St SE',
+    '1216 SECOND STREET WEST': '1216 2nd St SW',
+    '2000 NORTH AVENUE': '2000 North Ave',
+    '701 FAIRVIEW BOULEVARD, PO BOX 95': '701 Fairview Blvd',
+    '502 EAST SECOND STREET': '502 E 2nd St',
+    '701 SOUTH DELLWOOD': '701 Dellwood St S',
+    '1018 SIXTH AVENUE PO BOX 997': '1018 6th Ave',
+    '333 NORTH SMITH': '333 Smith Ave',
+    '712 SOUTH CASCADE': '712 S Cascade St',
+    '1601 GOLF COURSE ROAD': '1601 Golf Course Rd',
+    '927 WEST CHURCHILL STREET': '927 Churchill St W',
+    '2250 26TH STREET NORTHWEST': '2250 NW 26th St',
+    '1025 MARSH STREET BOX 8673': '1025 Marsh St',
+    '1000 FIRST DRIVE NORTHWEST': '1000 1st Dr NW',
+    '550 OSBORNE ROAD': '550 Osborne Rd NE',
+    '911 NORTHLAND DR': '911 Northland Boulevard',
+    '835 JOHNSON STREET, PO BOX 835': '835 Johnson St',
+    '1095 HIGHWAY 15 SOUTH': '1095 Highway 15 S',
+    '855 MANKATO AVENUE': '855 Mankato Ave'
+  };
+  street = street.toUpperCase().trim();
+  
+  return (!_.isUndefined(translations[street])) ? 
+    translations[street] : street;
+};
+
+// City translations
+function translateCity(city) {
+  var translations = {
+    'SAINT PAUL': 'St. Paul',
+    'SAINT LOUIS PAR': 'St. Louis Park' 
+    
+  };
+  city = city.toUpperCase().trim();
+  
+  return (!_.isUndefined(translations[city])) ? 
+    translations[city] : city;
+};
+
 
 // Launch
 processCSV();
