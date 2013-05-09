@@ -9,6 +9,30 @@
 var mpApp = mpApp || {};
 mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-charges'] || {};
 
+/**
+ * Extend underscore
+ */
+_.mixin({
+  /**
+   * Formats number into currency
+   */
+  formatCurrency: function(num) {
+    var rgx = (/(\d+)(\d{3})/);
+    split = num.toFixed(2).toString().split('.');
+    while (rgx.test(split[0])) {
+      split[0] = split[0].replace(rgx, '$1' + ',' + '$2');
+    }
+    return '$' + split[0] + '.' + split[1];
+  },
+  
+  /**
+   * Formats percentage
+   */
+  formatPercentage: function(num) {
+    return (num * 100).toFixed(1).toString() + '%';
+  }
+});
+
 
 /**
  * Non global

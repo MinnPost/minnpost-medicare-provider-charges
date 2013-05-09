@@ -92,11 +92,16 @@
       return this;
     },
     
-    renderProvider: function(provider) {
+    renderProviders: function(p1, p2) {
       var thisView = this;
       
       app.getTemplate('template-provider', function(template) {
-        thisView.$el.find(thisView.providerEl).append(template({ p: provider.toJSON() }));
+        thisView.$el.find(thisView.providerEl).html(
+          template({
+            p1: (_.isObject(p1)) ? p1.toJSON() : false,
+            p2: (_.isObject(p2)) ? p2.toJSON() : false,
+            drgs: app.data.drgs 
+          }));
       });
       
       return this;
@@ -202,9 +207,8 @@
         this.displayProviders.splice(0, 1);
       }
       
-      _.each(this.displayProviders, function(p) {
-        thisApp.mainView.renderProvider(thisApp.providers.get(p));
-      });
+      thisApp.mainView.renderProviders(this.providers.get(this.displayProviders[0]),
+        this.providers.get(this.displayProviders[1]));
     },
     
     showProvider: function(p) {
@@ -216,7 +220,6 @@
         this.displayProviders.push(p);
       }
       
-      console.log(this.displayProviders);
       this.navigate('/providers/' + this.displayProviders.join('/'), { trigger: true, replace: true });
     }
   });

@@ -64,3 +64,13 @@
   width: 100%;
   height: 500px;
 }
+
+/**
+ * Provider details
+ */
+.providers {
+  font-size: .65em;
+}
+.providers table {
+  width: 100%;
+}
