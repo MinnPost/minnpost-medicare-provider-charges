@@ -22,10 +22,10 @@
   app.AppView = Backbone.View.extend({
     el: '#minnpost-medicare-provider-charges',
     
-    mapBaseLayer: new L.TileLayer(
-      'http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png', 
-      { attribution: 'Map tiles &copy; <a href="http://mapbox.com">MapBox</a>', maxZoom: 17 }
-    ),
+    mapLayers: {
+      'Streets': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png'),
+      'Satellite': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-95lgm5jf/{z}/{x}/{y}.png')
+    },
     
     initialize: function() {
       this.templates = this.templates || {};
@@ -42,7 +42,9 @@
       var thisView = this;
       
       this.map = new L.Map('provider-map').setView([46.708, -93.056], 6);
-      this.mapBaseLayer.addTo(this.map);
+      this.map.addLayer(this.mapLayers['Streets']);
+      this.map.addControl(new L.control.layers(this.mapLayers));
+      this.map.attributionControl.setPrefix(false);
       
       providers.each(function(p) {
         app.getTemplate('template-map-popup', function(template) {
