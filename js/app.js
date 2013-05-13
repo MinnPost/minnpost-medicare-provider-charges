@@ -35,7 +35,7 @@
         .bindPopup(markerOutput)
         .on('click', function() {
           circle.setStyle(thisModel.mapMarkerHighlight);
-          app.router.showProvider(thisModel.id);
+          app.router.navigate('/provider/' + thisModel.id, { trigger: true, replace: true });
         })
         .on('mouseover', function() {
           circle.setStyle(thisModel.mapMarkerHighlight);
@@ -79,7 +79,7 @@
       var thisView = this;
       
       this.map = new L.Map('provider-map').setView([46.708, -93.056], 6);
-      this.map.addLayer(this.mapLayers['Streets']);
+      this.map.addLayer(this.mapLayers.Streets);
       this.map.addControl(new L.control.layers(this.mapLayers));
       this.map.attributionControl.setPrefix(false);
       
@@ -92,15 +92,15 @@
       return this;
     },
     
-    renderProviders: function(p1, p2) {
+    renderProvider: function(provider) {
       var thisView = this;
       
       app.getTemplate('template-provider', function(template) {
         thisView.$el.find(thisView.providerEl).html(
           template({
-            p1: (_.isObject(p1)) ? p1.toJSON() : false,
-            p2: (_.isObject(p2)) ? p2.toJSON() : false,
-            drgs: app.data.drgs 
+            p: (_.isObject(provider)) ? provider.toJSON() : false,
+            drgs: app.data.drgs,
+            stats: app.data.stats 
           }));
       });
       
@@ -127,7 +127,7 @@
   app.Application = Backbone.Router.extend({
     routes: {
       'map': 'routeMap',
-      'providers/*providers': 'routeProviders',
+      'provider/:provider': 'routeProvider',
       '*defaultR': 'routeDefault'
     },
     
@@ -199,28 +199,10 @@
       //this.navigate('/map', { trigger: true, replace: true });
     },
     
-    routeProviders: function(providers) {
+    routeProvider: function(provider) {
       var thisApp = this;
       
-      this.displayProviders = providers.split('/');
-      if (this.displayProviders.length > 2) {
-        this.displayProviders.splice(0, 1);
-      }
-      
-      thisApp.mainView.renderProviders(this.providers.get(this.displayProviders[0]),
-        this.providers.get(this.displayProviders[1]));
-    },
-    
-    showProvider: function(p) {
-      if (this.displayProviders.length >= 2) {
-        this.displayProviders.shift();
-        this.displayProviders.push(p)
-      }
-      else {
-        this.displayProviders.push(p);
-      }
-      
-      this.navigate('/providers/' + this.displayProviders.join('/'), { trigger: true, replace: true });
+      thisApp.mainView.renderProvider(this.providers.get(provider));
     }
   });
   
