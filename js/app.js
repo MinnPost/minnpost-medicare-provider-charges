@@ -25,6 +25,18 @@
     initialize: function() {
       // Get charges
       this.set('charges', _.where(app.data.charges, { provider: this.id }));
+      this.setMaxes();
+    },
+    
+    setMaxes: function() {
+      var thisModel = this;
+      _.each(['avgCovChg', 'avgTotPay', 'perPay'], function(s) {
+        thisModel.set('max' + s, _.max(thisModel.get('charges'), function(c) { return c[s]; })[s]);
+      });
+      
+      this.set('maxperPay', 1);
+      this.set('maxavgCovChg', (this.get('maxavgCovChg') < 130000) ? 130000 : this.get('maxavgCovChg'));
+      this.set('maxavgTotPay', (this.get('maxavgTotPay') < 30000) ? 30000 : this.get('maxavgTotPay'));
     },
     
     addMarker: function(map, markerOutput) {
@@ -59,6 +71,10 @@
     el: '#minnpost-medicare-provider-charges',
     providerEl: '.results-container',
     
+    mapOptions: {
+      scrollWheelZoom: false
+    },
+    
     mapLayers: {
       'Streets': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png'),
       'Satellite': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-95lgm5jf/{z}/{x}/{y}.png')
@@ -78,7 +94,7 @@
     renderMap: function(providers) {
       var thisView = this;
       
-      this.map = new L.Map('provider-map').setView([46.708, -93.056], 6);
+      this.map = new L.Map('provider-map', this.mapOptions).setView([46.708, -93.056], 6);
       this.map.addLayer(this.mapLayers.Streets);
       this.map.addControl(new L.control.layers(this.mapLayers));
       this.map.attributionControl.setPrefix(false);
@@ -99,9 +115,14 @@
         thisView.$el.find(thisView.providerEl).html(
           template({
             p: (_.isObject(provider)) ? provider.toJSON() : false,
+            statPrefix: '',
             drgs: app.data.drgs,
             stats: app.data.stats 
           }));
+          
+          $('.box-plot').each(function() {
+            thisView.renderBoxPlot($(this));
+          });
       });
       
       return this;
@@ -121,6 +142,45 @@
         this.$el.html(this.templates.error({ error: e }));
       }, this);
       return this;
+    },
+    
+    renderBoxPlot: function(el) {
+      var $el = $(el);
+      var w = $el.width();
+      var h = $el.height();
+      var stats = $el.data();
+      var paper = new Raphael($el[0], w, h);
+      var axisMin = 0;
+      var axisMax = 250000;
+      var vPadding = h * .1;
+      var boxHeight = h - (vPadding * 2);
+      axisMax = (stats.axisMax) ? parseFloat(stats.axisMax) : axisMax;
+      axisMin = (stats.axisMin) ? parseFloat(stats.axisMin) : axisMin;
+      
+      // Find x coordinates
+      var minX = this.scaleValue(axisMin, axisMax, stats.min, w);
+      var q25X = this.scaleValue(axisMin, axisMax, stats.q25, w);
+      var medianX = this.scaleValue(axisMin, axisMax, stats.median, w);
+      var q75X = this.scaleValue(axisMin, axisMax, stats.q75, w);
+      var maxX = this.scaleValue(axisMin, axisMax, stats.max, w);
+      var valueX = this.scaleValue(axisMin, axisMax, stats.value, w);
+
+      // Min Max and "wiskers"
+      paper.rect(minX, vPadding * 2, 1, boxHeight - (vPadding * 2)).attr({ stroke: '#787878' });
+      paper.rect(maxX, vPadding * 2, 1, boxHeight - (vPadding * 2)).attr({ stroke: '#787878' });
+      paper.rect(minX, (h / 2), q25X - minX, .5).attr({ stroke: '#787878' });
+      paper.rect(q75X, (h / 2), maxX - q75X, .5).attr({ stroke: '#787878' });
+  
+      // Quartiles and median
+      paper.rect(q25X, vPadding, q75X - q25X, boxHeight).attr({ stroke: '#787878' });
+      paper.rect(medianX, vPadding, 1, boxHeight).attr({ stroke: '#242424' });
+
+      // Value
+      paper.rect(valueX, 0, 1, h).attr({ stroke: 'red' });
+    },
+    
+    scaleValue: function(min, max, value, width) {
+      return ((value - min) / (max - min)) * width;
     }
   });
   
@@ -175,6 +235,11 @@
     // Process data and make objects
     processData: function(data) {
       var thisApp = this;
+      
+      // Get percentage paid
+      _.each(app.data.charges, function(c, i) {
+        app.data.charges[i].perPay = (c.avgTotPay / c.avgCovChg);
+      });
     
       // Create providers collections
       this.providers = new app.ProvidersCollection();

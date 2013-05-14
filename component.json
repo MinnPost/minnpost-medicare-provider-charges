@@ -4,9 +4,10 @@
   "main": "index.html",
   "dependencies": {
     "jquery": "~1.9.1",
-    "leaflet": "~0.5.1",
+    "raphael": "~2.1.0",
     "backbone": "~1.0.0",
     "jquery-jsonp": "~2.4.0",
+    "leaflet": "~0.5.1",
     "underscore": "~1.4.4"
   }
 }

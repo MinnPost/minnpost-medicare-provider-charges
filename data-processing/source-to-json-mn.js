@@ -221,10 +221,11 @@ function processStats(row, drg, index) {
   var state = row[5];
   var groups = [drg];
   
-  // Get some extra values
+  // Get some extra values.  There are cases where the amount
+  // paid out is more than the amount charged
   row[11] = parseFloat(row[9]) - parseFloat(row[10]);
-  row[12] = (parseFloat(row[9]) - parseFloat(row[10])) / (parseFloat(row[9]));
-  
+  row[12] = parseFloat(row[10]) / parseFloat(row[9]);
+    
   // Only handle filtered state to get DRG stats
   if (state === stateFilter) {
     groups = [drg, state + '-' + drg];
@@ -245,6 +246,7 @@ function processStats(row, drg, index) {
 function makeStats() {
   _.each(stats, function(stat, statGroup) {
     _.each(stat, function(s, field) {
+      var stepRange;
       
       if (!s.values) {
         console.log('Issue with stat for group: ' + statGroup);
@@ -260,6 +262,12 @@ function makeStats() {
       //stats[statGroup][field].mode = ss.mode(s.values);
       //stats[statGroup][field].variance = ss.variance(s.values);
       //stats[statGroup][field].standard_deviation = ss.standard_deviation(s.values);
+      stats[statGroup][field].q25 = ss.quantile(s.values, 0.25);
+      stats[statGroup][field].q75 = ss.quantile(s.values, 0.75);
+      
+      stepRange = outlierRange(s.values, stats[statGroup][field].q25, stats[statGroup][field].q75, stats[statGroup][field].median);
+      stats[statGroup][field].stepL = stepRange[0];
+      stats[statGroup][field].stepU = stepRange[1];
     });
   });
   
@@ -269,6 +277,21 @@ function makeStats() {
       delete stats[statGroup][field].values;
     });
   });
+}
+
+// A box and whisker plot can go from min to max or
+// include all non-outliers (steps)
+function outlierRange(values, q25, q75, median) {
+  var sorted = values.slice().sort(function(a, b) { return a - b; });
+  var range = q75 - q25;
+  var lower = q25 - (range * 1.5);
+  var upper = q75 + (range * 1.5);
+  var i = 0, j = sorted.length - 1;
+  
+  while (sorted[i] < lower && sorted[i] != q25) { i++ }
+  while (sorted[j] > upper && sorted[j] != q75) { j-- }
+  
+  return [ sorted[i], sorted[j] ];
 }
 
 // Geocode providers

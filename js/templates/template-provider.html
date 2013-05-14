@@ -1,53 +1,35 @@
 <div class="providers clear-block">
-
+  <h3><%= (p) ? p.name : ''%></h3>
+  
   <table>
     <thead>
       <tr>
-        <th></th>
-        <th colspan="3"><%= (p) ? p.name : ''%></th>
-        <th></th>
-        <th></th>
-      </tr>
-      <tr>
-        <th>Clinical conditions, diagnoses, procedures</th>
+        <th>Clinical conditions, diagnoses, procedures (number reported)</th>
         
-        <% if (p) { %>
-          <th>Avg chg</th>
-          <th>Avg payed</th>
-          <th>% payed</th>
-        <% } else { %>
-          <th colspan="3"></th>
-        <% } %>
-        
-        <th>US Avg chg</th>
-        <th>US Avg payed</th>
-        <th>US % payed</th>
+        <th>Avg chg</th>
+        <th>Avg payed</th>
+        <th>% payed</th>
       </tr>
     </thead>
     
     <tbody>
-      <% _.each(drgs, function(d, i) { %>
-        <% var pfound = (p) ? _.find(p.charges, function(c) {  return (c.drg === i); }) : false %>
-        
-        <% if (pfound) { %>
-          <tr>
-            <td><%= d %></td>
-      
-            <% if (pfound) { %>
-              <td><%= _.formatCurrency(pfound.avgCovChg) %></td>
-              <td><%= _.formatCurrency(pfound.avgTotPay) %></td>
-              <td><%= _.formatPercentage((pfound.avgCovChg - pfound.avgTotPay) / pfound.avgCovChg) %>
-            <% } else { %>
-              <td colspan="3"><% if (p) { %><em>no data available<% } %></em></td>
-            <% } %>
-            
-            <% if (stats[i]) { %>
-              <td><%= _.formatCurrency(stats[i].avgCovChg.mean) %></td>
-              <td><%= _.formatCurrency(stats[i].avgTotPay.mean) %></td>
-              <td><%= _.formatPercentage(stats[i].perPay.mean) %>
-            <% } %>
-          </tr>
-        <% } %>
+      <% _.each(_.sortBy(p.charges, function(c) { return (-1 * c.totDischg) }), function(c, i) { %>
+        <tr>
+          <td><%= drgs[c.drg] %> (<%= c.totDischg %>)</td>
+          
+          <% _.each(['avgCovChg', 'avgTotPay', 'perPay'], function(stat) { %>
+            <td>
+              <div class="box-plot average-coverage-charge" 
+                data-median="<%= stats[statPrefix + c.drg][stat].median %>" 
+                data-q25="<%= stats[statPrefix + c.drg][stat].q25 %>" 
+                data-q75="<%= stats[statPrefix + c.drg][stat].q75 %>" 
+                data-min="<%= stats[statPrefix + c.drg][stat].stepL %>" 
+                data-max="<%= stats[statPrefix + c.drg][stat].stepU %>" 
+                data-value="<%= c[stat] %>" 
+                data-axis-max="<%= p['max' + stat] %>"></div>
+            </td>
+          <% }) %>
+        </tr>
       <% }) %>
     </tbody>
   </table>
