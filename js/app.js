@@ -115,7 +115,7 @@
         thisView.$el.find(thisView.providerEl).html(
           template({
             p: (_.isObject(provider)) ? provider.toJSON() : false,
-            statPrefix: '',
+            statPrefix: 'FL-',
             drgs: app.data.drgs,
             stats: app.data.stats 
           }));
@@ -152,7 +152,7 @@
       var paper = new Raphael($el[0], w, h);
       var axisMin = 0;
       var axisMax = 250000;
-      var vPadding = h * .1;
+      var vPadding = h * 0.1;
       var boxHeight = h - (vPadding * 2);
       axisMax = (stats.axisMax) ? parseFloat(stats.axisMax) : axisMax;
       axisMin = (stats.axisMin) ? parseFloat(stats.axisMin) : axisMin;
@@ -168,8 +168,8 @@
       // Min Max and "wiskers"
       paper.rect(minX, vPadding * 2, 1, boxHeight - (vPadding * 2)).attr({ stroke: '#787878' });
       paper.rect(maxX, vPadding * 2, 1, boxHeight - (vPadding * 2)).attr({ stroke: '#787878' });
-      paper.rect(minX, (h / 2), q25X - minX, .5).attr({ stroke: '#787878' });
-      paper.rect(q75X, (h / 2), maxX - q75X, .5).attr({ stroke: '#787878' });
+      paper.rect(minX, (h / 2), q25X - minX, 0.5).attr({ stroke: '#787878' });
+      paper.rect(q75X, (h / 2), maxX - q75X, 0.5).attr({ stroke: '#787878' });
   
       // Quartiles and median
       paper.rect(q25X, vPadding, q75X - q25X, boxHeight).attr({ stroke: '#787878' });

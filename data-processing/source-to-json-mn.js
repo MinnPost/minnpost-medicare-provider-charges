@@ -34,6 +34,7 @@ var input = 'data/original/Medicare_Provider_Charge_Inpatient_DRG100_FY2011.csv'
 var inputFile = path.resolve(__dirname, '../' + input);
 var outputPath = path.resolve(__dirname, '../data/converted/');
 var stateFilter = 'MN';
+var stateStatsFilter = [ 'MN', 'AZ', 'FL' ];
 var noProvidersFlag = '--no-providers';
 var noProviders = (process.argv.indexOf(noProvidersFlag) > 0) ? true : false;
 // Please don't steal
@@ -75,7 +76,7 @@ function processCSV() {
         
         // Only get MN data
         if (row[5].toUpperCase() === stateFilter) {
-          providerCode = (noProviders) ? row[1] : processProviders(row, index);
+          providerCode = processProviders(row, index);
           processCharges(drgCode, providerCode, row, index);
         }
       }
@@ -227,11 +228,11 @@ function processStats(row, drg, index) {
   row[12] = parseFloat(row[10]) / parseFloat(row[9]);
     
   // Only handle filtered state to get DRG stats
-  if (state === stateFilter) {
+  if (stateStatsFilter.indexOf(state) !== -1) {
     groups = [drg, state + '-' + drg];
   }
   
-  // Collect stats by DRG and state-DRG and US-DRG groups
+  // Collect stats by DRG and state-DRG groups
   _.each(groups, function(stat) {
     _.each(col, function(field, colNum) {
       stats[stat] = stats[stat] || {};
@@ -244,6 +245,7 @@ function processStats(row, drg, index) {
 
 // Using the values we got from before make stats
 function makeStats() {
+  // Make stats based on procedure and state
   _.each(stats, function(stat, statGroup) {
     _.each(stat, function(s, field) {
       var stepRange;
@@ -271,9 +273,50 @@ function makeStats() {
     });
   });
   
+  // Make stats based on provider
+  _.each(_.groupBy(charges, 'provider'), function(pCharges, provider) {
+    _.each(_.union(stateStatsFilter, ['']), function(stat) {
+      var values = [];
+      var prefix = (stat) ? stat + '-' : '';
+      
+      // Average charged difference
+      _.each(pCharges, function(c) {
+        values.push(c.avgCovChg / stats[prefix + c.drg].avgCovChg.mean);
+      });
+      providers[provider].diff = providers[provider].diff || {};
+      providers[provider].diff[prefix + 'AvgCovChg'] = ss.mean(values)
+    });
+  });
+  
+  // Figure out average provider diffs for MN
+  _.each(_.union(stateStatsFilter, ['']), function(stat) {
+    var values = [];
+    var prefix = (stat) ? stat + '-' : '';
+    
+    _.each(providers, function(p) {
+      values.push(p.diff[prefix + 'AvgCovChg']);
+    });
+    
+    console.log('MN average provider charge percentage of ' + 
+      ((prefix == '') ? 'US' : prefix) + ': ' + ss.mean(values));
+  });
+  
+  // Figure out average procedure diffs for MN
+  _.each(_.union(stateStatsFilter, ['']), function(stat) {
+    var values = [];
+    var prefix = (stat) ? stat + '-' : '';
+    
+    _.each(charges, function(c) {
+      values.push(c.avgCovChg / stats[prefix + c.drg].avgCovChg.mean);
+    });
+    
+    console.log('MN average procedure charge percentage of ' + 
+      ((prefix == '') ? 'US' : prefix) + ': ' + ss.mean(values));
+  });
+  
+  // Remove actual values
   _.each(stats, function(stat, statGroup) {
     _.each(stat, function(s, field) {
-      // Remove actual values
       delete stats[statGroup][field].values;
     });
   });
@@ -288,8 +331,8 @@ function outlierRange(values, q25, q75, median) {
   var upper = q75 + (range * 1.5);
   var i = 0, j = sorted.length - 1;
   
-  while (sorted[i] < lower && sorted[i] != q25) { i++ }
-  while (sorted[j] > upper && sorted[j] != q75) { j-- }
+  while (sorted[i] < lower && sorted[i] != q25) { i++; }
+  while (sorted[j] > upper && sorted[j] != q75) { j--; }
   
   return [ sorted[i], sorted[j] ];
 }
