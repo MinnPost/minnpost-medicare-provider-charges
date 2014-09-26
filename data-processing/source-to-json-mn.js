@@ -284,7 +284,7 @@ function makeStats() {
         values.push(c.avgCovChg / stats[prefix + c.drg].avgCovChg.mean);
       });
       providers[provider].diff = providers[provider].diff || {};
-      providers[provider].diff[prefix + 'AvgCovChg'] = ss.mean(values)
+      providers[provider].diff[prefix + 'AvgCovChg'] = ss.mean(values);
     });
   });
   
@@ -298,7 +298,7 @@ function makeStats() {
     });
     
     console.log('MN average provider charge percentage of ' + 
-      ((prefix == '') ? 'US' : prefix) + ': ' + ss.mean(values));
+      ((prefix === '') ? 'US' : prefix) + ': ' + ss.mean(values));
   });
   
   // Figure out average procedure diffs for MN
@@ -311,7 +311,7 @@ function makeStats() {
     });
     
     console.log('MN average procedure charge percentage of ' + 
-      ((prefix == '') ? 'US' : prefix) + ': ' + ss.mean(values));
+      ((prefix === '') ? 'US' : prefix) + ': ' + ss.mean(values));
   });
   
   // Remove actual values

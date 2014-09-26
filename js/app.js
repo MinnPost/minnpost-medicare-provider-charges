@@ -115,7 +115,7 @@
         thisView.$el.find(thisView.providerEl).html(
           template({
             p: (_.isObject(provider)) ? provider.toJSON() : false,
-            statPrefix: 'FL-',
+            statPrefix: 'AZ-',
             drgs: app.data.drgs,
             stats: app.data.stats 
           }));

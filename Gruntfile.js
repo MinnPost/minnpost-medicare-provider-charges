@@ -58,7 +58,7 @@ module.exports = function(grunt) {
         src: ['css/style.ie.css'], dest: 'dist/<%= pkg.name %>.latest.ie.css'
       },
       libs: {
-        src: ['components/jquery/jquery.min.js', 'components/jquery-jsonp/src/jquery.jsonp.js', 'components/underscore/underscore-min.js', 'components/backbone/backbone-min.js', 'components/leaflet/dist/leaflet.js'],
+        src: ['components/jquery/jquery.min.js', 'components/jquery-jsonp/src/jquery.jsonp.js', 'components/underscore/underscore-min.js', 'components/backbone/backbone-min.js', 'components/leaflet/dist/leaflet.js', 'components/raphael/raphael-min.js'],
         dest: 'dist/<%= pkg.name %>.libs.js',
         options: {
           separator: ';\r\n\r\n'

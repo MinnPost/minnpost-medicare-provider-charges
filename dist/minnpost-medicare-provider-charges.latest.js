@@ -9,6 +9,30 @@
 var mpApp = mpApp || {};
 mpApp['minnpost-medicare-provider-charges'] = mpApp['minnpost-medicare-provider-charges'] || {};
 
+/**
+ * Extend underscore
+ */
+_.mixin({
+  /**
+   * Formats number into currency
+   */
+  formatCurrency: function(num) {
+    var rgx = (/(\d+)(\d{3})/);
+    split = num.toFixed(2).toString().split('.');
+    while (rgx.test(split[0])) {
+      split[0] = split[0].replace(rgx, '$1' + ',' + '$2');
+    }
+    return '$' + split[0] + '.' + split[1];
+  },
+  
+  /**
+   * Formats percentage
+   */
+  formatPercentage: function(num) {
+    return (num * 100).toFixed(1).toString() + '%';
+  }
+});
+
 
 /**
  * Non global
@@ -144,6 +168,45 @@ __p += '<div class="map-popup">\n  <h3>' +
 return __p
 };
 
+this["mpApp"]["minnpost-medicare-provider-charges"]["templates"]["js/templates/template-provider.html"] = function(obj) {
+obj || (obj = {});
+var __t, __p = '', __e = _.escape, __j = Array.prototype.join;
+function print() { __p += __j.call(arguments, '') }
+with (obj) {
+__p += '<div class="providers clear-block">\n  <h3>' +
+((__t = ( (p) ? p.name : '')) == null ? '' : __t) +
+'</h3>\n  \n  <table>\n    <thead>\n      <tr>\n        <th>Clinical conditions, diagnoses, procedures (number reported)</th>\n        \n        <th>Avg chg</th>\n        <th>Avg payed</th>\n        <th>% payed</th>\n      </tr>\n    </thead>\n    \n    <tbody>\n      ';
+ _.each(_.sortBy(p.charges, function(c) { return (-1 * c.totDischg) }), function(c, i) { ;
+__p += '\n        <tr>\n          <td>' +
+((__t = ( drgs[c.drg] )) == null ? '' : __t) +
+' (' +
+((__t = ( c.totDischg )) == null ? '' : __t) +
+')</td>\n          \n          ';
+ _.each(['avgCovChg', 'avgTotPay', 'perPay'], function(stat) { ;
+__p += '\n            <td>\n              <div class="box-plot average-coverage-charge" \n                data-median="' +
+((__t = ( stats[statPrefix + c.drg][stat].median )) == null ? '' : __t) +
+'" \n                data-q25="' +
+((__t = ( stats[statPrefix + c.drg][stat].q25 )) == null ? '' : __t) +
+'" \n                data-q75="' +
+((__t = ( stats[statPrefix + c.drg][stat].q75 )) == null ? '' : __t) +
+'" \n                data-min="' +
+((__t = ( stats[statPrefix + c.drg][stat].stepL )) == null ? '' : __t) +
+'" \n                data-max="' +
+((__t = ( stats[statPrefix + c.drg][stat].stepU )) == null ? '' : __t) +
+'" \n                data-value="' +
+((__t = ( c[stat] )) == null ? '' : __t) +
+'" \n                data-axis-max="' +
+((__t = ( p['max' + stat] )) == null ? '' : __t) +
+'"></div>\n            </td>\n          ';
+ }) ;
+__p += '\n        </tr>\n      ';
+ }) ;
+__p += '\n    </tbody>\n  </table>\n  \n</div>';
+
+}
+return __p
+};
+
 /**
  * Main application for minnpost-medicare-provider-charges.
  */
@@ -153,9 +216,57 @@ return __p
  */
 (function(app, $, undefined) {
   app.ProviderModel = Backbone.Model.extend({
+    mapMarkerStyle: {
+      stroke: false,
+      fillOpacity: 0.75,
+      fillColor: '#222222',
+      radius: 4
+    },
+    
+    mapMarkerHighlight: {
+      stroke: true,
+      color: '#BCBCBC',
+      fillOpacity: 0.95,
+      fillColor: '#787878',
+      radius: 7
+    },
+    
     initialize: function() {
       // Get charges
       this.set('charges', _.where(app.data.charges, { provider: this.id }));
+      this.setMaxes();
+    },
+    
+    setMaxes: function() {
+      var thisModel = this;
+      _.each(['avgCovChg', 'avgTotPay', 'perPay'], function(s) {
+        thisModel.set('max' + s, _.max(thisModel.get('charges'), function(c) { return c[s]; })[s]);
+      });
+      
+      this.set('maxperPay', 1);
+      this.set('maxavgCovChg', (this.get('maxavgCovChg') < 130000) ? 130000 : this.get('maxavgCovChg'));
+      this.set('maxavgTotPay', (this.get('maxavgTotPay') < 30000) ? 30000 : this.get('maxavgTotPay'));
+    },
+    
+    addMarker: function(map, markerOutput) {
+      var thisModel = this;
+      
+      var circle = new L.CircleMarker([this.get('lat'), this.get('lng')], this.mapMarkerStyle);
+      circle.addTo(map)
+        .bindPopup(markerOutput)
+        .on('click', function() {
+          circle.setStyle(thisModel.mapMarkerHighlight);
+          app.router.navigate('/provider/' + thisModel.id, { trigger: true, replace: true });
+        })
+        .on('mouseover', function() {
+          circle.setStyle(thisModel.mapMarkerHighlight);
+        })
+        .on('mouseout', function() {
+          circle.setStyle(thisModel.mapMarkerStyle);
+        });
+      
+      this.set('marker', circle);
+      return this;
     }
   });
   
@@ -167,11 +278,16 @@ return __p
   
   app.AppView = Backbone.View.extend({
     el: '#minnpost-medicare-provider-charges',
+    providerEl: '.results-container',
     
-    mapBaseLayer: new L.TileLayer(
-      'http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png', 
-      { attribution: 'Map tiles &copy; <a href="http://mapbox.com">MapBox</a>', maxZoom: 17 }
-    ),
+    mapOptions: {
+      scrollWheelZoom: false
+    },
+    
+    mapLayers: {
+      'Streets': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-wi88b700/{z}/{x}/{y}.png'),
+      'Satellite': new L.TileLayer('http://{s}.tiles.mapbox.com/v3/minnpost.map-95lgm5jf/{z}/{x}/{y}.png')
+    },
     
     initialize: function() {
       this.templates = this.templates || {};
@@ -187,15 +303,35 @@ return __p
     renderMap: function(providers) {
       var thisView = this;
       
-      this.map = new L.Map('provider-map').setView([46.708, -93.056], 6);
-      this.mapBaseLayer.addTo(this.map);
+      this.map = new L.Map('provider-map', this.mapOptions).setView([46.708, -93.056], 6);
+      this.map.addLayer(this.mapLayers.Streets);
+      this.map.addControl(new L.control.layers(this.mapLayers));
+      this.map.attributionControl.setPrefix(false);
       
       providers.each(function(p) {
         app.getTemplate('template-map-popup', function(template) {
-          L.marker([p.get('lat'), p.get('lng')]).addTo(thisView.map)
-            .bindPopup(template({ p: p.toJSON() }));
-          
+          p.addMarker(thisView.map, template({ p: p.toJSON() }));
         }, this);
+      });
+      
+      return this;
+    },
+    
+    renderProvider: function(provider) {
+      var thisView = this;
+      
+      app.getTemplate('template-provider', function(template) {
+        thisView.$el.find(thisView.providerEl).html(
+          template({
+            p: (_.isObject(provider)) ? provider.toJSON() : false,
+            statPrefix: 'FL-',
+            drgs: app.data.drgs,
+            stats: app.data.stats 
+          }));
+          
+          $('.box-plot').each(function() {
+            thisView.renderBoxPlot($(this));
+          });
       });
       
       return this;
@@ -215,12 +351,52 @@ return __p
         this.$el.html(this.templates.error({ error: e }));
       }, this);
       return this;
+    },
+    
+    renderBoxPlot: function(el) {
+      var $el = $(el);
+      var w = $el.width();
+      var h = $el.height();
+      var stats = $el.data();
+      var paper = new Raphael($el[0], w, h);
+      var axisMin = 0;
+      var axisMax = 250000;
+      var vPadding = h * 0.1;
+      var boxHeight = h - (vPadding * 2);
+      axisMax = (stats.axisMax) ? parseFloat(stats.axisMax) : axisMax;
+      axisMin = (stats.axisMin) ? parseFloat(stats.axisMin) : axisMin;
+      
+      // Find x coordinates
+      var minX = this.scaleValue(axisMin, axisMax, stats.min, w);
+      var q25X = this.scaleValue(axisMin, axisMax, stats.q25, w);
+      var medianX = this.scaleValue(axisMin, axisMax, stats.median, w);
+      var q75X = this.scaleValue(axisMin, axisMax, stats.q75, w);
+      var maxX = this.scaleValue(axisMin, axisMax, stats.max, w);
+      var valueX = this.scaleValue(axisMin, axisMax, stats.value, w);
+
+      // Min Max and "wiskers"
+      paper.rect(minX, vPadding * 2, 1, boxHeight - (vPadding * 2)).attr({ stroke: '#787878' });
+      paper.rect(maxX, vPadding * 2, 1, boxHeight - (vPadding * 2)).attr({ stroke: '#787878' });
+      paper.rect(minX, (h / 2), q25X - minX, 0.5).attr({ stroke: '#787878' });
+      paper.rect(q75X, (h / 2), maxX - q75X, 0.5).attr({ stroke: '#787878' });
+  
+      // Quartiles and median
+      paper.rect(q25X, vPadding, q75X - q25X, boxHeight).attr({ stroke: '#787878' });
+      paper.rect(medianX, vPadding, 1, boxHeight).attr({ stroke: '#242424' });
+
+      // Value
+      paper.rect(valueX, 0, 1, h).attr({ stroke: 'red' });
+    },
+    
+    scaleValue: function(min, max, value, width) {
+      return ((value - min) / (max - min)) * width;
     }
   });
   
   app.Application = Backbone.Router.extend({
     routes: {
       'map': 'routeMap',
+      'provider/:provider': 'routeProvider',
       '*defaultR': 'routeDefault'
     },
     
@@ -230,9 +406,12 @@ return __p
     },
     
     dataSets: ['charges', 'drgs', 'providers', 'stats'],
+    
+    displayProviders: [],
   
     initialize: function(options) {
       var thisApp = this;
+      app.router = this;
     
       // Store intial options for globa use
       app.options = _.extend(this.defaultOptions, options);
@@ -265,6 +444,11 @@ return __p
     // Process data and make objects
     processData: function(data) {
       var thisApp = this;
+      
+      // Get percentage paid
+      _.each(app.data.charges, function(c, i) {
+        app.data.charges[i].perPay = (c.avgTotPay / c.avgCovChg);
+      });
     
       // Create providers collections
       this.providers = new app.ProvidersCollection();
@@ -274,6 +458,7 @@ return __p
       
       // Render main container
       this.mainView.render();
+      this.mainView.renderMap(this.providers);
       this.start();
     },
     
@@ -285,11 +470,13 @@ return __p
   
     // Default route
     routeDefault: function() {
-      this.navigate('/map', { trigger: true, replace: true });
+      //this.navigate('/map', { trigger: true, replace: true });
     },
     
-    routeMap: function() {
-      this.mainView.renderMap(this.providers);
+    routeProvider: function(provider) {
+      var thisApp = this;
+      
+      thisApp.mainView.renderProvider(this.providers.get(provider));
     }
   });
   
